@@ -1,0 +1,117 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id             Int            @id @default(autoincrement())
+  name           String
+  email          String         @unique
+  slug           String         @unique
+  phone          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  users          User[]
+
+  // Relaciones
+  employees      Employee[]
+  services       Service[]
+  availabilities Availability[]
+  shifts         Shift[]
+  subscriptions  Subscription[]
+}
+
+// 2. Empleados (Quienes realizan los servicios)
+model Employee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [id])
+  
+  shifts     Shift[]
+  createdAt  DateTime @default(now())
+}
+
+// 3. Servicios (Manicura, Peluquería, etc.)
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String
+  time        Int      // Duración en minutos
+  price       Decimal  @db.Decimal(10, 2)
+  enable      Boolean  @default(true)
+  businessId  Int
+  business    Business @relation(fields: [businessId], references: [id])
+
+  shifts      Shift[]
+}
+
+// 4. Disponibilidad (Horarios de apertura del negocio)
+model Availability {
+  id         Int      @id @default(autoincrement())
+  dayOfWeek  Int      // 0-6 (Domingo a Sábado)
+  startTime  String   // "09:00"
+  endTime    String   // "18:00"
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [id])
+}
+
+// 5. Turnos (Las reservas de los clientes)
+model Shift {
+  id          Int      @id @default(autoincrement())
+  clientName  String
+  clientEmail String
+  clientPhone String
+  status      String   @default("pending") // pending, confirmed, cancelled
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+
+  businessId  Int
+  business    Business @relation(fields: [businessId], references: [id])
+  serviceId   Int
+  service     Service  @relation(fields: [serviceId], references: [id])
+  employeeId  Int?     // Opcional por si no se asigna empleado de inmediato
+  employee    Employee? @relation(fields: [employeeId], references: [id])
+}
+
+// 6. Planes (Básico, Premium, etc. - Tú defines esto)
+model Plan {
+  id           Int            @id @default(autoincrement())
+  name         String
+  price        Decimal        @db.Decimal(10, 2)
+  operability  String         // Ej: "Hasta 5 empleados"
+  subscriptions Subscription[]
+}
+
+// 7. Suscripciones (Vincula un Negocio con un Plan)
+model Subscription {
+  id         Int      @id @default(autoincrement())
+  status     String   // active, expired
+  startAt    DateTime @default(now())
+  endAt      DateTime
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [id])
+  planId     Int
+  plan       Plan     @relation(fields: [planId], references: [id])
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  role       String   // admin, cliente
+  businessId Int?
+  business   Business? @relation(fields: [businessId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+
+

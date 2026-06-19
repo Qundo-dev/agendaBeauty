@@ -1,0 +1,19 @@
+
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: beauty_postgres_db
+    restart: always
+    environment:
+      # Estos deben coincidir con tu .env
+      POSTGRES_USER: user_beauty
+      POSTGRES_PASSWORD: estetica_dev
+      POSTGRES_DB: agenda_beauty
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_beauty_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_beauty_data:
